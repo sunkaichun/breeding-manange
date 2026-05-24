@@ -7,4 +7,8 @@ public final class LarkImClientModule {
     public static String name() {
         return "lark-im-client";
     }
+
+    public static LarkImClient inMemoryClient() {
+        return new InMemoryLarkImClient();
+    }
 }
