@@ -13,7 +13,7 @@ import com.wens.breeding.analysis.model.WeightRecord;
 import com.wens.breeding.app.openai.OpenAiLlmGateway;
 import com.wens.breeding.app.openai.OpenAiProperties;
 import com.wens.breeding.graph.AnalysisGraph;
-import com.wens.breeding.graph.RuleBasedAnalysisGraph;
+import com.wens.breeding.graph.execution.BreedingAnalysisExecutionGraphFactory;
 import com.wens.breeding.graph.llm.LlmGateway;
 import com.wens.breeding.graph.llm.RetryingLlmGateway;
 import com.wens.breeding.graph.llm.StaticJsonLlmGateway;
@@ -45,7 +45,7 @@ public class AiAppConfiguration {
 
     @Bean
     public AnalysisGraph analysisGraph(InMemoryBreedingBaseClient baseClient) {
-        return new RuleBasedAnalysisGraph(baseClient, baseClient, baseClient);
+        return BreedingAnalysisExecutionGraphFactory.langGraphStyle(baseClient, baseClient, baseClient);
     }
 
     @Bean

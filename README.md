@@ -43,6 +43,24 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.openai.model=gpt-5.2
 ```
 
+## AI Execution Layer
+
+The analysis runtime now has a traceable execution layer under
+`ai-graph-runtime/src/main/java/com/wens/breeding/graph/execution`.
+
+- `AiExecutionEngine` is the stable execution port.
+- `NodeBasedAiExecutionEngine` runs analysis as stateful nodes and still
+  implements `AnalysisGraph` for the existing bot and Base app callers.
+- `BreedingAnalysisExecutionGraphFactory.langGraphStyle(...)` builds the
+  current breeding analysis graph with request persistence, batch loading,
+  rule analysis, and result persistence nodes.
+- `AiFrameworkRegistry` records the planned framework roles for LangGraph4j,
+  LangChain4j, Spring AI, and the direct OpenAI SDK adapter.
+
+The current local runtime is Java 11, so native LangGraph4j, LangChain4j, and
+Spring AI dependencies are not enabled in Maven yet. Their current integration
+line should be activated after moving the project to Java 17 and Spring Boot 3.
+
 ## Notes
 
 The project targets Java 11 and Spring Boot 2.7.x because the local runtime is JDK 11.
