@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.zhitian.breeding</groupId>
+        <groupId>com.wens.breeding</groupId>
         <artifactId>breeding-ai-backend</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
@@ -23,27 +23,27 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.zhitian.breeding</groupId>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>ai-graph-runtime</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.zhitian.breeding</groupId>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>auth-security</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.zhitian.breeding</groupId>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>lark-bot-long-connection-adapter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.zhitian.breeding</groupId>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>lark-im-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.zhitian.breeding</groupId>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>task-orchestrator</artifactId>
             <version>${project.version}</version>
         </dependency>
