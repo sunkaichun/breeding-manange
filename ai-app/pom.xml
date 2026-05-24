@@ -29,6 +29,21 @@
         </dependency>
         <dependency>
             <groupId>com.wens.breeding</groupId>
+            <artifactId>analysis-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wens.breeding</groupId>
+            <artifactId>lark-base-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wens.breeding</groupId>
+            <artifactId>visualization-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>auth-security</artifactId>
             <version>${project.version}</version>
         </dependency>
