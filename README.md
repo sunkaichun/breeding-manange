@@ -31,6 +31,18 @@ The app module exposes a basic health endpoint:
 GET /api/health
 ```
 
+## OpenAI Model Integration
+
+The app can use the official OpenAI Java SDK through the shared `LlmGateway`
+abstraction. It is disabled by default for local tests. Enable it with:
+
+```bash
+export OPENAI_API_KEY=your_api_key
+java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
+  --breeding.ai.openai.enabled=true \
+  --breeding.ai.openai.model=gpt-5.2
+```
+
 ## Notes
 
 The project targets Java 11 and Spring Boot 2.7.x because the local runtime is JDK 11.

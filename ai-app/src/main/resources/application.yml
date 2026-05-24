@@ -10,3 +10,10 @@ management:
     web:
       exposure:
         include: health,info
+
+breeding:
+  ai:
+    openai:
+      enabled: false
+      model: gpt-5.2
+      max-attempts: 2

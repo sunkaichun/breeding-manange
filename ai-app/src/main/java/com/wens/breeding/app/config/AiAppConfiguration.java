@@ -10,11 +10,19 @@ import com.wens.breeding.analysis.model.BreedingStandard;
 import com.wens.breeding.analysis.model.FcrRecord;
 import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
+import com.wens.breeding.app.openai.OpenAiLlmGateway;
+import com.wens.breeding.app.openai.OpenAiProperties;
 import com.wens.breeding.graph.AnalysisGraph;
 import com.wens.breeding.graph.RuleBasedAnalysisGraph;
+import com.wens.breeding.graph.llm.LlmGateway;
+import com.wens.breeding.graph.llm.RetryingLlmGateway;
+import com.wens.breeding.graph.llm.StaticJsonLlmGateway;
 import com.wens.breeding.lark.base.InMemoryBreedingBaseClient;
 import com.wens.breeding.visualization.WeightTrendVisualizationGenerator;
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,8 +49,34 @@ public class AiAppConfiguration {
     }
 
     @Bean
+    @ConfigurationProperties(prefix = "breeding.ai.openai")
+    public OpenAiProperties openAiProperties() {
+        return new OpenAiProperties();
+    }
+
+    @Bean
+    public LlmGateway llmGateway(OpenAiProperties openAiProperties) {
+        if (!openAiProperties.isEnabled()) {
+            return new StaticJsonLlmGateway("{\"answer\":\"OpenAI integration is disabled.\",\"citations\":[]}");
+        }
+        OpenAIClient client = openAiClient(openAiProperties);
+        return new RetryingLlmGateway(
+                new OpenAiLlmGateway(client, openAiProperties.getModel()),
+                Math.max(1, openAiProperties.getMaxAttempts()));
+    }
+
+    @Bean
     public WeightTrendVisualizationGenerator weightTrendVisualizationGenerator() {
         return new WeightTrendVisualizationGenerator();
+    }
+
+    private static OpenAIClient openAiClient(OpenAiProperties openAiProperties) {
+        if (openAiProperties.hasApiKey()) {
+            return OpenAIOkHttpClient.builder()
+                    .apiKey(openAiProperties.getApiKey())
+                    .build();
+        }
+        return OpenAIOkHttpClient.fromEnv();
     }
 
     private static BreedingBatch batch() {
