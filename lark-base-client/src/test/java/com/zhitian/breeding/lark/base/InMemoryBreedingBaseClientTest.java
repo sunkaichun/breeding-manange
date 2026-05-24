@@ -18,6 +18,8 @@ import com.zhitian.breeding.analysis.model.AnalysisResult;
 import com.zhitian.breeding.analysis.model.AnalysisType;
 import com.zhitian.breeding.analysis.model.BreedingBatch;
 import com.zhitian.breeding.analysis.model.BreedingStandard;
+import com.zhitian.breeding.analysis.model.FcrRecord;
+import com.zhitian.breeding.analysis.model.FcrStandard;
 import com.zhitian.breeding.analysis.model.RequestSource;
 import com.zhitian.breeding.analysis.model.RiskLevel;
 import com.zhitian.breeding.analysis.model.WeightRecord;
@@ -30,7 +32,12 @@ class InMemoryBreedingBaseClientTest {
                     weight("BATCH-001", "2026-05-21", 51, "1.45"),
                     weight("BATCH-001", "2026-05-22", 52, "1.48"),
                     weight("BATCH-002", "2026-05-22", 52, "1.40")),
-            Collections.singletonList(standard()));
+            Collections.singletonList(standard()),
+            Arrays.asList(
+                    fcr("BATCH-001", "2026-05-21", 51, "120", "80"),
+                    fcr("BATCH-001", "2026-05-22", 52, "152", "80"),
+                    fcr("BATCH-002", "2026-05-22", 52, "120", "80")),
+            Collections.singletonList(fcrStandard()));
 
     @Test
     void findsBatchById() {
@@ -54,6 +61,18 @@ class InMemoryBreedingBaseClientTest {
     void findsStandardByBreedFeedingModeAndAgeRange() {
         assertTrue(client.findStandard("Datu2", "Mixed", 53).isPresent());
         assertFalse(client.findStandard("Datu2", "Mixed", 61).isPresent());
+    }
+
+    @Test
+    void listsFcrRecordsAndFindsFcrStandard() {
+        List<FcrRecord> records = client.listFcrRecords(
+                "BATCH-001",
+                LocalDate.parse("2026-05-21"),
+                LocalDate.parse("2026-05-22"));
+
+        assertEquals(2, records.size());
+        assertTrue(client.findFcrStandard("Datu2", "Mixed", 53).isPresent());
+        assertFalse(client.findFcrStandard("Datu2", "Mixed", 61).isPresent());
     }
 
     @Test
@@ -130,5 +149,23 @@ class InMemoryBreedingBaseClientTest {
                 new BigDecimal("1.30"),
                 new BigDecimal("1.58"),
                 new BigDecimal("80"));
+    }
+
+    private static FcrRecord fcr(String batchId, String recordDate, int ageDays, String feedConsumedKg, String weightGainKg) {
+        return new FcrRecord(
+                batchId,
+                LocalDate.parse(recordDate),
+                ageDays,
+                new BigDecimal(feedConsumedKg),
+                new BigDecimal(weightGainKg));
+    }
+
+    private static FcrStandard fcrStandard() {
+        return new FcrStandard(
+                "Datu2",
+                "Mixed",
+                31,
+                60,
+                new BigDecimal("1.70"));
     }
 }

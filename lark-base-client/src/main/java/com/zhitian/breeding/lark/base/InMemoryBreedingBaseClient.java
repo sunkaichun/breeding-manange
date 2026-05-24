@@ -15,12 +15,16 @@ import com.zhitian.breeding.analysis.model.AnalysisRequest;
 import com.zhitian.breeding.analysis.model.AnalysisResult;
 import com.zhitian.breeding.analysis.model.BreedingBatch;
 import com.zhitian.breeding.analysis.model.BreedingStandard;
+import com.zhitian.breeding.analysis.model.FcrRecord;
+import com.zhitian.breeding.analysis.model.FcrStandard;
 import com.zhitian.breeding.analysis.model.WeightRecord;
 
-public final class InMemoryBreedingBaseClient implements BreedingBaseClient, AiBaseWriteClient {
+public final class InMemoryBreedingBaseClient implements BreedingBaseClient, FcrBaseClient, AiBaseWriteClient {
     private final Map<String, BreedingBatch> batches;
     private final List<WeightRecord> weightRecords;
     private final List<BreedingStandard> standards;
+    private final List<FcrRecord> fcrRecords;
+    private final List<FcrStandard> fcrStandards;
     private final Map<String, AnalysisRequest> analysisRequests = new LinkedHashMap<>();
     private final Map<String, AnalysisResult> analysisResults = new LinkedHashMap<>();
     private final Map<String, VisualizationDataRecord> visualizationData = new LinkedHashMap<>();
@@ -29,9 +33,20 @@ public final class InMemoryBreedingBaseClient implements BreedingBaseClient, AiB
             List<BreedingBatch> batches,
             List<WeightRecord> weightRecords,
             List<BreedingStandard> standards) {
+        this(batches, weightRecords, standards, java.util.Collections.emptyList(), java.util.Collections.emptyList());
+    }
+
+    public InMemoryBreedingBaseClient(
+            List<BreedingBatch> batches,
+            List<WeightRecord> weightRecords,
+            List<BreedingStandard> standards,
+            List<FcrRecord> fcrRecords,
+            List<FcrStandard> fcrStandards) {
         this.batches = indexBatches(batches);
         this.weightRecords = immutableSortedWeights(weightRecords);
         this.standards = immutableStandards(standards);
+        this.fcrRecords = immutableSortedFcrRecords(fcrRecords);
+        this.fcrStandards = immutableFcrStandards(fcrStandards);
     }
 
     @Override
@@ -63,6 +78,34 @@ public final class InMemoryBreedingBaseClient implements BreedingBaseClient, AiB
         String normalizedBreedName = requireText(breedName, "breedName");
         String normalizedFeedingMode = requireText(feedingMode, "feedingMode");
         return standards.stream()
+                .filter(standard -> standard.matches(normalizedBreedName, normalizedFeedingMode, ageDays))
+                .findFirst();
+    }
+
+    @Override
+    public List<FcrRecord> listFcrRecords(String batchId, LocalDate startDate, LocalDate endDate) {
+        String normalizedBatchId = requireText(batchId, "batchId");
+        Objects.requireNonNull(startDate, "startDate");
+        Objects.requireNonNull(endDate, "endDate");
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("endDate must not be before startDate");
+        }
+
+        return fcrRecords.stream()
+                .filter(record -> normalizedBatchId.equals(record.getBatchId()))
+                .filter(record -> !record.getRecordDate().isBefore(startDate))
+                .filter(record -> !record.getRecordDate().isAfter(endDate))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<FcrStandard> findFcrStandard(String breedName, String feedingMode, int ageDays) {
+        if (ageDays < 0) {
+            throw new IllegalArgumentException("ageDays must be non-negative");
+        }
+        String normalizedBreedName = requireText(breedName, "breedName");
+        String normalizedFeedingMode = requireText(feedingMode, "feedingMode");
+        return fcrStandards.stream()
                 .filter(standard -> standard.matches(normalizedBreedName, normalizedFeedingMode, ageDays))
                 .findFirst();
     }
@@ -120,6 +163,18 @@ public final class InMemoryBreedingBaseClient implements BreedingBaseClient, AiB
 
     private static List<BreedingStandard> immutableStandards(List<BreedingStandard> standards) {
         return java.util.Collections.unmodifiableList(new ArrayList<>(safeList(standards)));
+    }
+
+    private static List<FcrRecord> immutableSortedFcrRecords(List<FcrRecord> fcrRecords) {
+        List<FcrRecord> copy = new ArrayList<>(safeList(fcrRecords));
+        copy.sort(Comparator
+                .comparing(FcrRecord::getRecordDate)
+                .thenComparing(FcrRecord::getBatchId));
+        return java.util.Collections.unmodifiableList(copy);
+    }
+
+    private static List<FcrStandard> immutableFcrStandards(List<FcrStandard> fcrStandards) {
+        return java.util.Collections.unmodifiableList(new ArrayList<>(safeList(fcrStandards)));
     }
 
     private static <T> List<T> safeList(List<T> values) {
