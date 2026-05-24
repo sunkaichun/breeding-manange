@@ -21,6 +21,11 @@
         </dependency>
         <dependency>
             <groupId>com.wens.breeding</groupId>
+            <artifactId>ai-graph-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>lark-im-client</artifactId>
             <version>${project.version}</version>
         </dependency>
