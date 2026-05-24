@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>com.wens.breeding</groupId>
+            <artifactId>analysis-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wens.breeding</groupId>
             <artifactId>lark-im-client</artifactId>
             <version>${project.version}</version>
         </dependency>

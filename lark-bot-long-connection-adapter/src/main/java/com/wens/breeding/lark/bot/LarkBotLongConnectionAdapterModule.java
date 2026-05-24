@@ -1,5 +1,7 @@
 package com.wens.breeding.lark.bot;
 
+import com.wens.breeding.lark.bot.command.BotCommandRouter;
+import com.wens.breeding.lark.bot.command.RuleBasedBotCommandRouter;
 import com.wens.breeding.lark.bot.runner.LarkEventConsumerRunner;
 import com.wens.breeding.lark.bot.runner.ProcessBuilderLarkEventConsumerProcessLauncher;
 
@@ -13,5 +15,9 @@ public final class LarkBotLongConnectionAdapterModule {
 
     public static LarkEventConsumerRunner defaultRunner() {
         return new LarkEventConsumerRunner(new ProcessBuilderLarkEventConsumerProcessLauncher());
+    }
+
+    public static BotCommandRouter defaultCommandRouter() {
+        return new RuleBasedBotCommandRouter();
     }
 }
