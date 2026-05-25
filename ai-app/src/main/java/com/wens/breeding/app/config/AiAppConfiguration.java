@@ -10,6 +10,9 @@ import com.wens.breeding.analysis.model.BreedingStandard;
 import com.wens.breeding.analysis.model.FcrRecord;
 import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
+import com.wens.breeding.app.agent.AgentChatClient;
+import com.wens.breeding.app.agent.OpenAiStreamingChatClient;
+import com.wens.breeding.app.agent.StaticStreamingChatClient;
 import com.wens.breeding.app.openai.OpenAiLlmGateway;
 import com.wens.breeding.app.openai.OpenAiProperties;
 import com.wens.breeding.app.springai.SpringAiLlmGateway;
@@ -84,6 +87,14 @@ public class AiAppConfiguration {
                 break;
         }
         return new RetryingLlmGateway(gateway, maxAttempts(aiModelProperties, openAiProperties));
+    }
+
+    @Bean
+    public AgentChatClient agentChatClient(AiModelProperties aiModelProperties, OpenAiProperties openAiProperties) {
+        if (resolveProvider(aiModelProperties, openAiProperties) == AiModelProvider.OPENAI) {
+            return new OpenAiStreamingChatClient(openAiClient(openAiProperties), openAiProperties.getModel());
+        }
+        return new StaticStreamingChatClient();
     }
 
     @Bean

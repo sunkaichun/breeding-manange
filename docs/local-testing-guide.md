@@ -132,7 +132,82 @@ curl -X POST http://localhost:8080/api/lark/base-app/analysis-requests \
 - `KNOWLEDGE_QA`
 - `COMPREHENSIVE`
 
-## 7. 使用 OpenAI 代理服务商测试
+## 7. 测试通用 Agent SSE 流式接口
+
+通用 Agent 接口支持普通聊天，也支持在问题命中批次号、体重趋势、均匀度、料肉比等场景时调用后端数据分析工具。
+
+先用静态模型模式启动，避免本地测试依赖真实模型：
+
+```bash
+java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
+  --breeding.ai.provider=static \
+  --breeding.ai.openai.enabled=false
+```
+
+调用 SSE 接口：
+
+```bash
+curl -N -X POST http://localhost:8080/api/agent/chat/stream \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream' \
+  -d '{
+    "conversationId": "local-001",
+    "messages": [
+      {
+        "role": "user",
+        "content": "帮我分析 BATCH-001 最近三天体重趋势，并给出建议"
+      }
+    ],
+    "enableTools": true
+  }'
+```
+
+期望看到流式 SSE 事件：
+
+```text
+event:tool_call
+data:{"toolName":"breeding_analysis",...}
+
+event:tool_result
+data:{"toolName":"breeding_analysis",...}
+
+event:token
+data:{"content":"..."}
+
+event:done
+data:{"status":"COMPLETED"}
+```
+
+普通聊天可以关闭工具调用：
+
+```bash
+curl -N -X POST http://localhost:8080/api/agent/chat/stream \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream' \
+  -d '{
+    "conversationId": "local-002",
+    "messages": [
+      {
+        "role": "user",
+        "content": "你好，介绍一下你能做什么"
+      }
+    ],
+    "enableTools": false
+  }'
+```
+
+如果要直连 OpenAI 或代理服务商测试真实模型流式输出：
+
+```bash
+java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
+  --breeding.ai.provider=openai \
+  --breeding.ai.openai.enabled=true \
+  --breeding.ai.openai.api-key="$OPENAI_API_KEY" \
+  --breeding.ai.openai.base-url="$OPENAI_BASE_URL" \
+  --breeding.ai.openai.model=gpt-5.4
+```
+
+## 8. 使用 OpenAI 代理服务商测试
 
 如果你的模型通过服务商代理访问，需要配置 `base-url`、`api-key` 和 `model`。
 
@@ -181,7 +256,7 @@ breeding:
       max-attempts: 2
 ```
 
-## 8. 常见问题
+## 9. 常见问题
 
 ### Unrecognized option: --breeding.ai.provider=openai
 
@@ -243,7 +318,7 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.openai.timeout=60s
 ```
 
-## 9. 提交前检查
+## 10. 提交前检查
 
 每次提交前建议运行：
 
