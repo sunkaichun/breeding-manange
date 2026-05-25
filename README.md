@@ -34,6 +34,9 @@ The app module exposes a basic health endpoint:
 GET /api/health
 ```
 
+For a complete local verification workflow, see
+[`docs/local-testing-guide.md`](docs/local-testing-guide.md).
+
 ## OpenAI Model Integration
 
 The app can use the official OpenAI Java SDK through the shared `LlmGateway`
