@@ -92,12 +92,23 @@ public class AiAppConfiguration {
     }
 
     private static OpenAIClient openAiClient(OpenAiProperties openAiProperties) {
+        OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder()
+                .fromEnv()
+                .timeout(openAiProperties.getTimeout())
+                .maxRetries(Math.max(0, openAiProperties.getClientMaxRetries()));
         if (openAiProperties.hasApiKey()) {
-            return OpenAIOkHttpClient.builder()
-                    .apiKey(openAiProperties.getApiKey())
-                    .build();
+            builder.apiKey(openAiProperties.getApiKey());
         }
-        return OpenAIOkHttpClient.fromEnv();
+        if (openAiProperties.hasBaseUrl()) {
+            builder.baseUrl(openAiProperties.getBaseUrl());
+        }
+        if (openAiProperties.hasOrganization()) {
+            builder.organization(openAiProperties.getOrganization());
+        }
+        if (openAiProperties.hasProject()) {
+            builder.project(openAiProperties.getProject());
+        }
+        return builder.build();
     }
 
     private static AiModelProvider resolveProvider(AiModelProperties aiModelProperties, OpenAiProperties openAiProperties) {

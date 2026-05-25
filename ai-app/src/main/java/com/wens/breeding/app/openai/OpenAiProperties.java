@@ -1,9 +1,16 @@
 package com.wens.breeding.app.openai;
 
+import java.time.Duration;
+
 public final class OpenAiProperties {
     private boolean enabled;
     private String model = "gpt-5.2";
     private String apiKey = "";
+    private String baseUrl = "";
+    private String organization = "";
+    private String project = "";
+    private Duration timeout = Duration.ofSeconds(30);
+    private int clientMaxRetries = 2;
     private int maxAttempts = 2;
 
     public boolean isEnabled() {
@@ -30,6 +37,46 @@ public final class OpenAiProperties {
         this.apiKey = apiKey;
     }
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
+    }
+
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = project;
+    }
+
+    public Duration getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(Duration timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getClientMaxRetries() {
+        return clientMaxRetries;
+    }
+
+    public void setClientMaxRetries(int clientMaxRetries) {
+        this.clientMaxRetries = clientMaxRetries;
+    }
+
     public int getMaxAttempts() {
         return maxAttempts;
     }
@@ -39,6 +86,22 @@ public final class OpenAiProperties {
     }
 
     public boolean hasApiKey() {
-        return apiKey != null && !apiKey.trim().isEmpty();
+        return hasText(apiKey);
+    }
+
+    public boolean hasBaseUrl() {
+        return hasText(baseUrl);
+    }
+
+    public boolean hasOrganization() {
+        return hasText(organization);
+    }
+
+    public boolean hasProject() {
+        return hasText(project);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

@@ -44,11 +44,21 @@ adapter with:
 export OPENAI_API_KEY=your_api_key
 java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.provider=openai \
-  --breeding.ai.openai.model=gpt-5.2
+  --breeding.ai.openai.model=gpt-5.2 \
+  --breeding.ai.openai.base-url=https://your-provider.example/v1
 ```
 
 For backward compatibility, `--breeding.ai.openai.enabled=true` also selects
 the direct OpenAI SDK adapter when `breeding.ai.provider` remains `static`.
+The OpenAI SDK adapter is fully configuration driven:
+
+- `breeding.ai.openai.api-key`
+- `breeding.ai.openai.base-url`
+- `breeding.ai.openai.model`
+- `breeding.ai.openai.organization`
+- `breeding.ai.openai.project`
+- `breeding.ai.openai.timeout`
+- `breeding.ai.openai.client-max-retries`
 
 ## AI Execution Layer
 
