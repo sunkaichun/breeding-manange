@@ -1,5 +1,6 @@
 package com.wens.breeding.graph.execution;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +13,9 @@ import com.wens.breeding.analysis.model.FcrRecord;
 import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
 
-public final class AiExecutionContext {
+public final class AiExecutionContext implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final AnalysisRequest request;
     private BreedingBatch batch;
     private List<WeightRecord> weightRecords = Collections.emptyList();

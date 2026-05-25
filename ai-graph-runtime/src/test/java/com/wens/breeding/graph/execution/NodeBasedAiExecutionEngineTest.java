@@ -74,13 +74,34 @@ class NodeBasedAiExecutionEngineTest {
     }
 
     @Test
+    void nativeLangGraph4jEngineRunsAnalysisGraph() {
+        NativeLangGraph4jExecutionEngine engine = BreedingAnalysisExecutionGraphFactory
+                .nativeLangGraph4j(baseClient, baseClient, baseClient);
+
+        AiExecutionResult result = engine.execute(request("REQ-N-003", AnalysisType.UNIFORMITY));
+
+        assertEquals(AiFramework.LANGGRAPH4J, result.getFramework());
+        assertEquals(RiskLevel.HIGH, result.getAnalysisResult().getRiskLevel());
+        assertEquals(4, result.getTraces().size());
+        assertEquals("persist-analysis-request", result.getTraces().get(0).getNodeName());
+        assertEquals("load-batch", result.getTraces().get(1).getNodeName());
+        assertEquals("rule-analysis", result.getTraces().get(2).getNodeName());
+        assertEquals("persist-analysis-result", result.getTraces().get(3).getNodeName());
+        assertTrue(baseClient.findWrittenAnalysisRequest("REQ-N-003").isPresent());
+        assertTrue(baseClient.findWrittenAnalysisResult("REQ-N-003").isPresent());
+    }
+
+    @Test
     void exposesFrameworkIntegrationPlan() {
         AiFrameworkRegistry registry = new AiFrameworkRegistry();
 
         assertEquals(4, registry.listIntegrations().size());
         assertEquals(AiFramework.LANGGRAPH4J, registry.listIntegrations().get(0).getFramework());
-        assertTrue(registry.listIntegrations().get(0).getRequiredJavaVersion().contains("17"));
+        assertTrue(registry.listIntegrations().get(0).getAdapterClassName().contains("NativeLangGraph4j"));
+        assertTrue(registry.listIntegrations().get(0).getRequiredJavaVersion().contains("21"));
+        assertTrue(registry.listIntegrations().get(1).getAdapterClassName().contains("LangChain4j"));
         assertEquals(AiFramework.SPRING_AI, registry.listIntegrations().get(2).getFramework());
+        assertTrue(registry.listIntegrations().get(2).getAdapterClassName().contains("SpringAi"));
     }
 
     private static AnalysisRequest request(String requestId, AnalysisType analysisType) {

@@ -1,6 +1,10 @@
 package com.wens.breeding.graph.execution;
 
-public final class AiExecutionTrace {
+import java.io.Serializable;
+
+public final class AiExecutionTrace implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String nodeName;
     private final AiExecutionNodeStatus status;
     private final String message;

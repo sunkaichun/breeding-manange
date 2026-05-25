@@ -23,15 +23,30 @@ public final class BreedingAnalysisExecutionGraphFactory {
             AiBaseWriteClient writeClient) {
         return new NodeBasedAiExecutionEngine(
                 AiFramework.LANGGRAPH4J,
-                Arrays.asList(
-                        new PersistAnalysisRequestNode(writeClient),
-                        new LoadBatchNode(breedingBaseClient),
-                        new RuleAnalysisNode(
-                                breedingBaseClient,
-                                fcrBaseClient,
-                                new WeightTrendAnalyzer(),
-                                new UniformityAnalyzer(),
-                                new FcrAnalyzer()),
-                        new PersistAnalysisResultNode(writeClient)));
+                breedingAnalysisNodes(breedingBaseClient, fcrBaseClient, writeClient));
+    }
+
+    public static NativeLangGraph4jExecutionEngine nativeLangGraph4j(
+            BreedingBaseClient breedingBaseClient,
+            FcrBaseClient fcrBaseClient,
+            AiBaseWriteClient writeClient) {
+        return new NativeLangGraph4jExecutionEngine(
+                breedingAnalysisNodes(breedingBaseClient, fcrBaseClient, writeClient));
+    }
+
+    private static java.util.List<AiExecutionNode> breedingAnalysisNodes(
+            BreedingBaseClient breedingBaseClient,
+            FcrBaseClient fcrBaseClient,
+            AiBaseWriteClient writeClient) {
+        return Arrays.asList(
+                new PersistAnalysisRequestNode(writeClient),
+                new LoadBatchNode(breedingBaseClient),
+                new RuleAnalysisNode(
+                        breedingBaseClient,
+                        fcrBaseClient,
+                        new WeightTrendAnalyzer(),
+                        new UniformityAnalyzer(),
+                        new FcrAnalyzer()),
+                new PersistAnalysisResultNode(writeClient));
     }
 }

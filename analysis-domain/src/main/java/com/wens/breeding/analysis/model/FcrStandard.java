@@ -1,9 +1,12 @@
 package com.wens.breeding.analysis.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public final class FcrStandard {
+public final class FcrStandard implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String breedName;
     private final String feedingMode;
     private final int startAgeDays;

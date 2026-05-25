@@ -13,6 +13,9 @@ management:
 
 breeding:
   ai:
+    provider: static
+    max-attempts: 2
+    static-json-response: '{"answer":"AI model integration is disabled.","citations":[]}'
     openai:
       enabled: false
       model: gpt-5.2

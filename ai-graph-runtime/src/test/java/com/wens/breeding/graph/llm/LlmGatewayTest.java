@@ -9,6 +9,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.output.FinishReason;
+import dev.langchain4j.model.output.TokenUsage;
+
 class LlmGatewayTest {
     @Test
     void staticGatewayReturnsStructuredJsonResponse() {
@@ -62,5 +71,43 @@ class LlmGatewayTest {
                 .userPrompt("hello")
                 .timeout(Duration.ZERO)
                 .build());
+    }
+
+    @Test
+    void langChain4jGatewayMapsRequestAndResponse() {
+        AtomicInteger calls = new AtomicInteger();
+        ChatModel chatModel = new ChatModel() {
+            @Override
+            public ChatResponse chat(ChatRequest request) {
+                calls.incrementAndGet();
+                assertEquals(2, request.messages().size());
+                assertEquals("system", ((SystemMessage) request.messages().get(0)).text());
+                assertTrue(((UserMessage) request.messages().get(1)).singleText().contains("Return format"));
+                assertEquals(0.4, request.temperature());
+                assertEquals(256, request.maxOutputTokens());
+                return ChatResponse.builder()
+                        .aiMessage(AiMessage.from("{\"summary\":\"ok\"}"))
+                        .modelName("lc-test-model")
+                        .tokenUsage(new TokenUsage(11, 7))
+                        .finishReason(FinishReason.STOP)
+                        .build();
+            }
+        };
+
+        LlmResponse response = new LangChain4jLlmGateway(chatModel, "fallback")
+                .complete(LlmRequest.builder()
+                        .systemPrompt("system")
+                        .userPrompt("analyze")
+                        .responseSchema("{\"summary\":\"string\"}")
+                        .temperature(0.4)
+                        .maxTokens(256)
+                        .build());
+
+        assertEquals(1, calls.get());
+        assertEquals("{\"summary\":\"ok\"}", response.getContent());
+        assertEquals("lc-test-model", response.getModelName());
+        assertEquals(11, response.getPromptTokens());
+        assertEquals(7, response.getCompletionTokens());
+        assertEquals("STOP", response.getFinishReason());
     }
 }

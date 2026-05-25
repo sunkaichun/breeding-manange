@@ -1,9 +1,12 @@
 package com.wens.breeding.analysis.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public final class BreedingBatch {
+public final class BreedingBatch implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String batchId;
     private final String organizationName;
     private final String breedName;

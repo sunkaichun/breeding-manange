@@ -1,10 +1,13 @@
 package com.wens.breeding.analysis.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class AnalysisResult {
+public final class AnalysisResult implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String requestId;
     private final RiskLevel riskLevel;
     private final String summary;

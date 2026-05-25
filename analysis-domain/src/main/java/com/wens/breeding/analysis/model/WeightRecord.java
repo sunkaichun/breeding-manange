@@ -1,10 +1,13 @@
 package com.wens.breeding.analysis.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public final class WeightRecord {
+public final class WeightRecord implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String batchId;
     private final LocalDate measuredDate;
     private final int ageDays;

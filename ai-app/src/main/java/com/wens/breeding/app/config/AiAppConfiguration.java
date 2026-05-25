@@ -12,6 +12,7 @@ import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
 import com.wens.breeding.app.openai.OpenAiLlmGateway;
 import com.wens.breeding.app.openai.OpenAiProperties;
+import com.wens.breeding.app.springai.SpringAiLlmGateway;
 import com.wens.breeding.graph.AnalysisGraph;
 import com.wens.breeding.graph.execution.BreedingAnalysisExecutionGraphFactory;
 import com.wens.breeding.graph.llm.LlmGateway;
@@ -22,7 +23,9 @@ import com.wens.breeding.visualization.WeightTrendVisualizationGenerator;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -45,7 +48,7 @@ public class AiAppConfiguration {
 
     @Bean
     public AnalysisGraph analysisGraph(InMemoryBreedingBaseClient baseClient) {
-        return BreedingAnalysisExecutionGraphFactory.langGraphStyle(baseClient, baseClient, baseClient);
+        return BreedingAnalysisExecutionGraphFactory.nativeLangGraph4j(baseClient, baseClient, baseClient);
     }
 
     @Bean
@@ -55,14 +58,32 @@ public class AiAppConfiguration {
     }
 
     @Bean
-    public LlmGateway llmGateway(OpenAiProperties openAiProperties) {
-        if (!openAiProperties.isEnabled()) {
-            return new StaticJsonLlmGateway("{\"answer\":\"OpenAI integration is disabled.\",\"citations\":[]}");
+    @ConfigurationProperties(prefix = "breeding.ai")
+    public AiModelProperties aiModelProperties() {
+        return new AiModelProperties();
+    }
+
+    @Bean
+    public LlmGateway llmGateway(
+            AiModelProperties aiModelProperties,
+            OpenAiProperties openAiProperties,
+            ObjectProvider<ChatModel> springAiChatModel) {
+        LlmGateway gateway;
+        switch (resolveProvider(aiModelProperties, openAiProperties)) {
+            case OPENAI:
+                gateway = new OpenAiLlmGateway(openAiClient(openAiProperties), openAiProperties.getModel());
+                break;
+            case SPRING_AI:
+                gateway = new SpringAiLlmGateway(
+                        requireSpringAiChatModel(springAiChatModel),
+                        openAiProperties.getModel());
+                break;
+            case STATIC:
+            default:
+                gateway = new StaticJsonLlmGateway(aiModelProperties.getStaticJsonResponse());
+                break;
         }
-        OpenAIClient client = openAiClient(openAiProperties);
-        return new RetryingLlmGateway(
-                new OpenAiLlmGateway(client, openAiProperties.getModel()),
-                Math.max(1, openAiProperties.getMaxAttempts()));
+        return new RetryingLlmGateway(gateway, maxAttempts(aiModelProperties, openAiProperties));
     }
 
     @Bean
@@ -77,6 +98,29 @@ public class AiAppConfiguration {
                     .build();
         }
         return OpenAIOkHttpClient.fromEnv();
+    }
+
+    private static AiModelProvider resolveProvider(AiModelProperties aiModelProperties, OpenAiProperties openAiProperties) {
+        if (openAiProperties.isEnabled() && aiModelProperties.getProvider() == AiModelProvider.STATIC) {
+            return AiModelProvider.OPENAI;
+        }
+        return aiModelProperties.getProvider();
+    }
+
+    private static int maxAttempts(AiModelProperties aiModelProperties, OpenAiProperties openAiProperties) {
+        int maxAttempts = aiModelProperties.getMaxAttempts();
+        if (openAiProperties.isEnabled() && aiModelProperties.getProvider() == AiModelProvider.STATIC) {
+            maxAttempts = openAiProperties.getMaxAttempts();
+        }
+        return Math.max(1, maxAttempts);
+    }
+
+    private static ChatModel requireSpringAiChatModel(ObjectProvider<ChatModel> springAiChatModel) {
+        ChatModel chatModel = springAiChatModel.getIfAvailable();
+        if (chatModel == null) {
+            throw new IllegalStateException("breeding.ai.provider=SPRING_AI requires a Spring AI ChatModel bean");
+        }
+        return chatModel;
     }
 
     private static BreedingBatch batch() {

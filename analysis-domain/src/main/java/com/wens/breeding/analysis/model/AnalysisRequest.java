@@ -1,9 +1,12 @@
 package com.wens.breeding.analysis.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public final class AnalysisRequest {
+public final class AnalysisRequest implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String requestId;
     private final RequestSource source;
     private final String requesterOpenId;
