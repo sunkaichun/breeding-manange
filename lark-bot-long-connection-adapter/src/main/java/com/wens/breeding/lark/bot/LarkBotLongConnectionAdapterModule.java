@@ -1,11 +1,15 @@
 package com.wens.breeding.lark.bot;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.wens.breeding.analysis.model.AnalysisResult;
 import com.wens.breeding.lark.bot.command.BotCommandRouter;
 import com.wens.breeding.lark.bot.command.RuleBasedBotCommandRouter;
+import com.wens.breeding.lark.bot.event.BotMessageEventHandler;
+import com.wens.breeding.lark.bot.queue.QueuedBotMessageEventHandler;
 import com.wens.breeding.lark.bot.runner.LarkEventConsumerRunner;
 import com.wens.breeding.lark.bot.runner.ProcessBuilderLarkEventConsumerProcessLauncher;
 import com.wens.breeding.lark.bot.workflow.BotAnalysisRequestFactory;
@@ -43,5 +47,15 @@ public final class LarkBotLongConnectionAdapterModule {
 
     public static ExecutorService defaultAnalysisTaskExecutor() {
         return Executors.newFixedThreadPool(4);
+    }
+
+    public static QueuedBotMessageEventHandler defaultQueuedMessageHandler(
+            BotMessageEventHandler delegate,
+            Duration delay) {
+        return new QueuedBotMessageEventHandler(delegate, defaultBotMessageQueueExecutor(), delay, true);
+    }
+
+    public static ScheduledExecutorService defaultBotMessageQueueExecutor() {
+        return Executors.newScheduledThreadPool(2);
     }
 }

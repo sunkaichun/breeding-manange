@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class InMemoryLarkImClient implements LarkImClient {
     private final AtomicLong sequence = new AtomicLong();
-    private final List<SentLarkMessage> sentMessages = new ArrayList<>();
+    private final List<SentLarkMessage> sentMessages = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public MessageDeliveryResult sendText(String chatId, String text) {
@@ -42,7 +42,9 @@ public final class InMemoryLarkImClient implements LarkImClient {
     }
 
     public List<SentLarkMessage> listSentMessages() {
-        return Collections.unmodifiableList(new ArrayList<>(sentMessages));
+        synchronized (sentMessages) {
+            return Collections.unmodifiableList(new ArrayList<>(sentMessages));
+        }
     }
 
     private void append(SentLarkMessage message) {

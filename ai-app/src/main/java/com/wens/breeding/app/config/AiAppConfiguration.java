@@ -4,13 +4,17 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.wens.breeding.analysis.model.BreedingBatch;
 import com.wens.breeding.analysis.model.BreedingStandard;
 import com.wens.breeding.analysis.model.FcrRecord;
 import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
+import com.wens.breeding.app.agent.AgentChatBotClient;
 import com.wens.breeding.app.agent.AgentChatClient;
+import com.wens.breeding.app.agent.AgentChatService;
 import com.wens.breeding.app.agent.OpenAiStreamingChatClient;
 import com.wens.breeding.app.agent.StaticStreamingChatClient;
 import com.wens.breeding.app.openai.OpenAiLlmGateway;
@@ -21,16 +25,29 @@ import com.wens.breeding.graph.execution.BreedingAnalysisExecutionGraphFactory;
 import com.wens.breeding.graph.llm.LlmGateway;
 import com.wens.breeding.graph.llm.RetryingLlmGateway;
 import com.wens.breeding.graph.llm.StaticJsonLlmGateway;
+import com.wens.breeding.lark.bot.chat.BotAgentChatClient;
+import com.wens.breeding.lark.bot.dedupe.IdempotentBotMessageEventHandler;
+import com.wens.breeding.lark.bot.dedupe.InMemoryMessageDeduplicationStore;
+import com.wens.breeding.lark.bot.dedupe.MessageDeduplicationStore;
+import com.wens.breeding.lark.bot.event.BotMessageEventHandler;
+import com.wens.breeding.lark.bot.event.BotMessageEventLineHandler;
+import com.wens.breeding.lark.bot.queue.QueuedBotMessageEventHandler;
+import com.wens.breeding.lark.bot.workflow.BotAgentChatWorkflow;
 import com.wens.breeding.lark.base.InMemoryBreedingBaseClient;
+import com.wens.breeding.lark.im.InMemoryLarkImClient;
+import com.wens.breeding.lark.im.LarkImClient;
 import com.wens.breeding.visualization.WeightTrendVisualizationGenerator;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class AiAppConfiguration {
@@ -67,6 +84,12 @@ public class AiAppConfiguration {
     }
 
     @Bean
+    @ConfigurationProperties(prefix = "breeding.lark.bot")
+    public LarkBotProperties larkBotProperties() {
+        return new LarkBotProperties();
+    }
+
+    @Bean
     public LlmGateway llmGateway(
             AiModelProperties aiModelProperties,
             OpenAiProperties openAiProperties,
@@ -95,6 +118,63 @@ public class AiAppConfiguration {
             return new OpenAiStreamingChatClient(openAiClient(openAiProperties), openAiProperties.getModel());
         }
         return new StaticStreamingChatClient();
+    }
+
+    @Bean
+    public LarkImClient larkImClient() {
+        return new InMemoryLarkImClient();
+    }
+
+    @Bean
+    @ConditionalOnBean(AgentChatService.class)
+    public BotAgentChatClient botAgentChatClient(AgentChatService agentChatService) {
+        return new AgentChatBotClient(agentChatService);
+    }
+
+    @Bean
+    @ConditionalOnBean(BotAgentChatClient.class)
+    public BotAgentChatWorkflow botAgentChatWorkflow(BotAgentChatClient botAgentChatClient, LarkImClient larkImClient) {
+        return new BotAgentChatWorkflow(botAgentChatClient, larkImClient);
+    }
+
+    @Bean
+    public MessageDeduplicationStore messageDeduplicationStore() {
+        return new InMemoryMessageDeduplicationStore();
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    public ScheduledExecutorService botMessageQueueExecutor(LarkBotProperties larkBotProperties) {
+        return Executors.newScheduledThreadPool(larkBotProperties.resolvedQueueThreads());
+    }
+
+    @Bean
+    @ConditionalOnBean(BotAgentChatWorkflow.class)
+    public QueuedBotMessageEventHandler queuedBotMessageEventHandler(
+            BotAgentChatWorkflow botAgentChatWorkflow,
+            MessageDeduplicationStore messageDeduplicationStore,
+            @Qualifier("botMessageQueueExecutor") ScheduledExecutorService botMessageQueueExecutor,
+            LarkBotProperties larkBotProperties) {
+        BotMessageEventHandler idempotentHandler = new IdempotentBotMessageEventHandler(
+                messageDeduplicationStore,
+                botAgentChatWorkflow);
+        return new QueuedBotMessageEventHandler(
+                idempotentHandler,
+                botMessageQueueExecutor,
+                larkBotProperties.getQueueDelay());
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnBean(QueuedBotMessageEventHandler.class)
+    public BotMessageEventHandler botMessageEventHandler(QueuedBotMessageEventHandler queuedBotMessageEventHandler) {
+        return queuedBotMessageEventHandler;
+    }
+
+    @Bean
+    @ConditionalOnBean(name = "botMessageEventHandler")
+    public BotMessageEventLineHandler botMessageEventLineHandler(
+            @Qualifier("botMessageEventHandler") BotMessageEventHandler botMessageEventHandler) {
+        return BotMessageEventLineHandler.withDefaultParser(botMessageEventHandler);
     }
 
     @Bean

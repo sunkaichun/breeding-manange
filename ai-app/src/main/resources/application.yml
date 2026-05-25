@@ -26,3 +26,7 @@ breeding:
       timeout: 30s
       client-max-retries: 2
       max-attempts: 2
+  lark:
+    bot:
+      queue-delay: 500ms
+      queue-threads: 2

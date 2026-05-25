@@ -139,6 +139,32 @@ flowchart LR
     C --> H["SSE events<br/>tool_call / tool_result / token / done / error"]
 ```
 
+Feishu bot long-connection messages use the same Agent chat service through a
+queued adapter. Messages from the same `chatId` are delayed briefly and consumed
+serially, so a group chat does not receive overlapping Agent replies.
+
+```mermaid
+flowchart LR
+    A["Feishu long connection<br/>im.message.receive_v1"] --> B["BotMessageEventLineHandler<br/>parse NDJSON event"]
+    B --> C["QueuedBotMessageEventHandler<br/>delay + serial queue by chatId"]
+    C --> D["IdempotentBotMessageEventHandler<br/>event/message dedupe at consumption time"]
+    D --> E["BotAgentChatWorkflow<br/>build bot chat request"]
+    E --> F["AgentChatBotClient<br/>bridge bot port to AgentChatService"]
+    F --> G["AgentChatService<br/>tools + model streaming"]
+    G --> H["Collect tokens"]
+    H --> I["LarkImClient.sendText<br/>one final reply"]
+```
+
+Bot queue configuration:
+
+```yaml
+breeding:
+  lark:
+    bot:
+      queue-delay: 500ms
+      queue-threads: 2
+```
+
 ## Notes
 
 The project targets Java 21 and Spring Boot 3.5.x so the AI execution layer can
