@@ -32,6 +32,7 @@ import com.wens.breeding.lark.bot.dedupe.MessageDeduplicationStore;
 import com.wens.breeding.lark.bot.event.BotMessageEventHandler;
 import com.wens.breeding.lark.bot.event.BotMessageEventLineHandler;
 import com.wens.breeding.lark.bot.queue.QueuedBotMessageEventHandler;
+import com.wens.breeding.lark.bot.runner.LarkEventConsumerConfig;
 import com.wens.breeding.lark.bot.workflow.BotAgentChatWorkflow;
 import com.wens.breeding.lark.base.InMemoryBreedingBaseClient;
 import com.wens.breeding.lark.im.InMemoryLarkImClient;
@@ -87,6 +88,20 @@ public class AiAppConfiguration {
     @ConfigurationProperties(prefix = "breeding.lark.bot")
     public LarkBotProperties larkBotProperties() {
         return new LarkBotProperties();
+    }
+
+    @Bean
+    public LarkEventConsumerConfig larkEventConsumerConfig(LarkBotProperties larkBotProperties) {
+        LarkBotProperties.Consumer consumer = larkBotProperties.getConsumer();
+        return LarkEventConsumerConfig.receiveMessageDefaults()
+                .cliPath(consumer.getCliPath())
+                .eventKey(consumer.getEventKey())
+                .identity(consumer.getIdentity())
+                .maxEvents(consumer.getMaxEvents())
+                .timeout(consumer.getTimeout())
+                .jqExpression(consumer.getJqExpression())
+                .readyTimeout(consumer.getReadyTimeout())
+                .build();
     }
 
     @Bean

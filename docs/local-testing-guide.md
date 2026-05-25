@@ -256,7 +256,49 @@ breeding:
       max-attempts: 2
 ```
 
-## 9. 常见问题
+## 9. 配置飞书机器人长连接参数
+
+飞书机器人应用和长连接消费参数统一通过配置文件或环境变量管理：
+
+```bash
+export LARK_BOT_APP_ID='cli_xxx'
+export LARK_BOT_APP_SECRET='你的飞书机器人 app secret'
+export LARK_BOT_VERIFICATION_TOKEN='事件订阅 verification token'
+export LARK_BOT_ENCRYPT_KEY='事件订阅 encrypt key'
+export LARK_BOT_OPEN_ID='机器人 open_id'
+export LARK_BOT_CONSUMER_ENABLED='true'
+export LARK_CLI_PATH='lark-cli'
+export LARK_BOT_EVENT_IDENTITY='BOT'
+```
+
+对应配置项：
+
+```yaml
+breeding:
+  lark:
+    bot:
+      app:
+        app-id: ${LARK_BOT_APP_ID:}
+        app-secret: ${LARK_BOT_APP_SECRET:}
+        verification-token: ${LARK_BOT_VERIFICATION_TOKEN:}
+        encrypt-key: ${LARK_BOT_ENCRYPT_KEY:}
+        bot-open-id: ${LARK_BOT_OPEN_ID:}
+      consumer:
+        enabled: ${LARK_BOT_CONSUMER_ENABLED:false}
+        cli-path: ${LARK_CLI_PATH:lark-cli}
+        event-key: ${LARK_BOT_EVENT_KEY:im.message.receive_v1}
+        identity: ${LARK_BOT_EVENT_IDENTITY:BOT}
+        max-events: ${LARK_BOT_MAX_EVENTS:0}
+        timeout: ${LARK_BOT_EVENT_TIMEOUT:}
+        jq-expression: ${LARK_BOT_EVENT_JQ:}
+        ready-timeout: ${LARK_BOT_READY_TIMEOUT:10s}
+      queue-delay: 500ms
+      queue-threads: 2
+```
+
+其中 `queue-delay` 和 `queue-threads` 用于控制机器人消息延迟串行消费，防止同一会话短时间内并发回复多条消息。
+
+## 10. 常见问题
 
 ### Unrecognized option: --breeding.ai.provider=openai
 
@@ -318,7 +360,7 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.openai.timeout=60s
 ```
 
-## 10. 提交前检查
+## 11. 提交前检查
 
 每次提交前建议运行：
 

@@ -161,6 +161,21 @@ Bot queue configuration:
 breeding:
   lark:
     bot:
+      app:
+        app-id: ${LARK_BOT_APP_ID:}
+        app-secret: ${LARK_BOT_APP_SECRET:}
+        verification-token: ${LARK_BOT_VERIFICATION_TOKEN:}
+        encrypt-key: ${LARK_BOT_ENCRYPT_KEY:}
+        bot-open-id: ${LARK_BOT_OPEN_ID:}
+      consumer:
+        enabled: ${LARK_BOT_CONSUMER_ENABLED:false}
+        cli-path: ${LARK_CLI_PATH:lark-cli}
+        event-key: ${LARK_BOT_EVENT_KEY:im.message.receive_v1}
+        identity: ${LARK_BOT_EVENT_IDENTITY:BOT}
+        max-events: ${LARK_BOT_MAX_EVENTS:0}
+        timeout: ${LARK_BOT_EVENT_TIMEOUT:}
+        jq-expression: ${LARK_BOT_EVENT_JQ:}
+        ready-timeout: ${LARK_BOT_READY_TIMEOUT:10s}
       queue-delay: 500ms
       queue-threads: 2
 ```
