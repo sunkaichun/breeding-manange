@@ -80,6 +80,65 @@ The analysis runtime now has a traceable execution layer under
   external model clients into the same project `LlmGateway` port.
 - `breeding.ai.provider` selects `static`, `openai`, or `spring-ai` at runtime.
 
+## Agent Session Flow
+
+The generic Agent chat endpoint streams responses through Server-Sent Events:
+
+```text
+POST /api/agent/chat/stream
+Accept: text/event-stream
+Content-Type: application/json
+```
+
+```mermaid
+sequenceDiagram
+    participant Client as "Frontend / Feishu Base App"
+    participant API as "AgentChatController<br/>/api/agent/chat/stream"
+    participant Service as "AgentChatService"
+    participant Router as "AgentToolRouter"
+    participant Tool as "AgentTool<br/>Batch lookup / Breeding analysis"
+    participant Data as "BaseClient / AnalysisGraph"
+    participant LLM as "AgentChatClient<br/>OpenAI / Static"
+    participant SSE as "SSE Stream"
+
+    Client->>API: POST messages + enableTools
+    API->>Service: stream(request, eventSink)
+    Service->>Service: Validate messages and find latest user message
+
+    alt enableTools=true and a tool matches
+        Service->>Router: route(latestUserMessage)
+        Router-->>Service: matched tools
+        Service->>SSE: event: tool_call
+        Service->>Tool: execute(toolRequest)
+        Tool->>Data: Query batch or run analysis graph
+        Data-->>Tool: Data result or analysis result
+        Tool-->>Service: AgentToolResult
+        Service->>SSE: event: tool_result
+    end
+
+    Service->>Service: Build prompt from system prompt, conversation, and tool context
+    Service->>LLM: stream(prompt)
+    LLM-->>Service: token delta
+    Service->>SSE: event: token
+    Service->>SSE: event: done
+    API-->>Client: text/event-stream
+```
+
+```mermaid
+flowchart LR
+    A["Client<br/>Feishu Base app / local curl / future frontend"] --> B["AgentChatController<br/>SSE HTTP entrypoint"]
+    B --> C["AgentChatService<br/>Validation, tool orchestration, prompt building"]
+    C --> D["AgentToolRouter<br/>Route tools by user message"]
+    D --> E1["BatchLookupAgentTool<br/>Batch basic information"]
+    D --> E2["BreedingAnalysisAgentTool<br/>Weight, uniformity, FCR analysis"]
+    E1 --> F1["BreedingBaseClient<br/>Current in-memory implementation, later Feishu Base"]
+    E2 --> F2["AnalysisGraph<br/>Rule analysis with LLM/RAG extension points"]
+    C --> G["AgentChatClient"]
+    G --> G1["OpenAiStreamingChatClient<br/>Real model streaming"]
+    G --> G2["StaticStreamingChatClient<br/>Local static testing"]
+    C --> H["SSE events<br/>tool_call / tool_result / token / done / error"]
+```
+
 ## Notes
 
 The project targets Java 21 and Spring Boot 3.5.x so the AI execution layer can
