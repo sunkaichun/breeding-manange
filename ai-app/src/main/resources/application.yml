@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: breeding-ai-backend
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/app_dev?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USER:dev}
+    password: ${MYSQL_PASSWORD:devpass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 management:
   endpoints:
@@ -12,6 +17,8 @@ management:
         include: health,info
 
 breeding:
+  storage:
+    provider: ${BREEDING_STORAGE_PROVIDER:memory}
   ai:
     provider: openai
     max-attempts: 2

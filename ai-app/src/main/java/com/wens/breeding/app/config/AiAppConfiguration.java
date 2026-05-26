@@ -12,6 +12,7 @@ import com.wens.breeding.analysis.model.BreedingStandard;
 import com.wens.breeding.analysis.model.FcrRecord;
 import com.wens.breeding.analysis.model.FcrStandard;
 import com.wens.breeding.analysis.model.WeightRecord;
+import com.wens.breeding.analysis.model.AnalysisResult;
 import com.wens.breeding.app.agent.AgentChatBotClient;
 import com.wens.breeding.app.agent.AgentChatClient;
 import com.wens.breeding.app.agent.AgentChatService;
@@ -34,25 +35,40 @@ import com.wens.breeding.lark.bot.event.BotMessageEventLineHandler;
 import com.wens.breeding.lark.bot.queue.QueuedBotMessageEventHandler;
 import com.wens.breeding.lark.bot.runner.LarkEventConsumerConfig;
 import com.wens.breeding.lark.bot.workflow.BotAgentChatWorkflow;
+import com.wens.breeding.lark.base.AiBaseWriteClient;
+import com.wens.breeding.lark.base.BreedingBaseClient;
+import com.wens.breeding.lark.base.FcrBaseClient;
 import com.wens.breeding.lark.base.InMemoryBreedingBaseClient;
 import com.wens.breeding.lark.im.InMemoryLarkImClient;
 import com.wens.breeding.lark.im.LarkImClient;
+import com.wens.breeding.mysql.MysqlAiBaseWriteClient;
+import com.wens.breeding.mysql.MysqlBreedingBaseClient;
+import com.wens.breeding.mysql.MysqlSchemaInitializer;
+import com.wens.breeding.mysql.MysqlTaskStore;
+import com.wens.breeding.task.InMemoryTaskStore;
+import com.wens.breeding.task.TaskStore;
 import com.wens.breeding.visualization.WeightTrendVisualizationGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
+
+import javax.sql.DataSource;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class AiAppConfiguration {
     @Bean
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "memory", matchIfMissing = true)
     public InMemoryBreedingBaseClient inMemoryBreedingBaseClient() {
         return new InMemoryBreedingBaseClient(
                 Collections.singletonList(batch()),
@@ -67,9 +83,30 @@ public class AiAppConfiguration {
                 Collections.singletonList(fcrStandard()));
     }
 
+    @Bean(initMethod = "initialize")
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "mysql")
+    public MysqlSchemaInitializer mysqlSchemaInitializer(DataSource dataSource) {
+        return new MysqlSchemaInitializer(dataSource);
+    }
+
     @Bean
-    public AnalysisGraph analysisGraph(InMemoryBreedingBaseClient baseClient) {
-        return BreedingAnalysisExecutionGraphFactory.nativeLangGraph4j(baseClient, baseClient, baseClient);
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "mysql")
+    public MysqlBreedingBaseClient mysqlBreedingBaseClient(JdbcTemplate jdbcTemplate) {
+        return new MysqlBreedingBaseClient(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "mysql")
+    public MysqlAiBaseWriteClient mysqlAiBaseWriteClient(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+        return new MysqlAiBaseWriteClient(jdbcTemplate, objectMapper);
+    }
+
+    @Bean
+    public AnalysisGraph analysisGraph(
+            BreedingBaseClient breedingBaseClient,
+            FcrBaseClient fcrBaseClient,
+            AiBaseWriteClient writeClient) {
+        return BreedingAnalysisExecutionGraphFactory.nativeLangGraph4j(breedingBaseClient, fcrBaseClient, writeClient);
     }
 
     @Bean
@@ -82,6 +119,12 @@ public class AiAppConfiguration {
     @ConfigurationProperties(prefix = "breeding.ai")
     public AiModelProperties aiModelProperties() {
         return new AiModelProperties();
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "breeding.storage")
+    public StorageProperties storageProperties() {
+        return new StorageProperties();
     }
 
     @Bean
@@ -155,6 +198,18 @@ public class AiAppConfiguration {
     @Bean
     public MessageDeduplicationStore messageDeduplicationStore() {
         return new InMemoryMessageDeduplicationStore();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "memory", matchIfMissing = true)
+    public TaskStore<AnalysisResult> analysisTaskStore() {
+        return new InMemoryTaskStore<>();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "breeding.storage", name = "provider", havingValue = "mysql")
+    public TaskStore<AnalysisResult> mysqlAnalysisTaskStore(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+        return new MysqlTaskStore<>(jdbcTemplate, objectMapper, AnalysisResult.class);
     }
 
     @Bean(destroyMethod = "shutdown")

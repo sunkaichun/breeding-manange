@@ -20,6 +20,7 @@
         <module>rag-knowledge</module>
         <module>visualization-service</module>
         <module>task-orchestrator</module>
+        <module>mysql-persistence</module>
         <module>ai-graph-runtime</module>
         <module>lark-bot-long-connection-adapter</module>
         <module>ai-app</module>

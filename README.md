@@ -16,6 +16,7 @@ multi-module project with:
 - RAG knowledge module: `rag-knowledge`
 - Visualization service module: `visualization-service`
 - Task orchestration module: `task-orchestrator`
+- MySQL persistence module: `mysql-persistence`
 - Authorization and security module: `auth-security`
 
 ## Build
@@ -80,6 +81,18 @@ The analysis runtime now has a traceable execution layer under
   external model clients into the same project `LlmGateway` port.
 - `breeding.ai.provider` selects `static`, `openai`, or `spring-ai` at runtime.
 
+## Storage
+
+The application can run with the default in-memory storage or persist domain
+objects to MySQL 8:
+
+- `breeding.storage.provider=memory` keeps local sample data in memory.
+- `breeding.storage.provider=mysql` stores breeding batches, weight records,
+  standards, FCR records, analysis requests, analysis results, visualization
+  records, and async task records in MySQL.
+- `spring.datasource.*` controls the MySQL connection. The default local values
+  target `jdbc:mysql://127.0.0.1:3306/app_dev` with user `dev`.
+
 ## Agent Session Flow
 
 The generic Agent chat endpoint streams responses through Server-Sent Events:
@@ -131,7 +144,7 @@ flowchart LR
     C --> D["AgentToolRouter<br/>Route tools by user message"]
     D --> E1["BatchLookupAgentTool<br/>Batch basic information"]
     D --> E2["BreedingAnalysisAgentTool<br/>Weight, uniformity, FCR analysis"]
-    E1 --> F1["BreedingBaseClient<br/>Current in-memory implementation, later Feishu Base"]
+    E1 --> F1["BreedingBaseClient<br/>In-memory or MySQL implementation"]
     E2 --> F2["AnalysisGraph<br/>Rule analysis with LLM/RAG extension points"]
     C --> G["AgentChatClient"]
     G --> G1["OpenAiStreamingChatClient<br/>Real model streaming"]

@@ -46,7 +46,68 @@ PATH=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home/bin:$PATH \
 mvn -pl ai-app -am -Dmaven.repo.local=.m2/repository test
 ```
 
-## 3. 本地打包
+## 3. 测试 MySQL 持久化
+
+本地 MySQL 环境默认配置：
+
+```text
+Host: 127.0.0.1
+Port: 3306
+Database: app_dev
+User: dev
+Password: devpass
+Version: MySQL 8.0.35
+```
+
+先确认数据库可连接：
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u dev -pdevpass app_dev -e 'SELECT VERSION();'
+```
+
+单独运行 MySQL 持久化模块测试：
+
+```bash
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home \
+PATH=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home/bin:$PATH \
+mvn -pl mysql-persistence -am -Dmaven.repo.local=.m2/repository test
+```
+
+测试会自动执行 `mysql-persistence/src/main/resources/db/mysql/schema.sql` 建表，并写入 `IT-` 前缀测试数据，结束后清理。
+如果本地 MySQL 不可用，该集成测试会自动跳过。
+
+应用切换到 MySQL 存储模式：
+
+```bash
+java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
+  --breeding.storage.provider=mysql \
+  --spring.datasource.url='jdbc:mysql://127.0.0.1:3306/app_dev?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true' \
+  --spring.datasource.username=dev \
+  --spring.datasource.password=devpass
+```
+
+也可以通过环境变量配置：
+
+```bash
+export BREEDING_STORAGE_PROVIDER=mysql
+export MYSQL_URL='jdbc:mysql://127.0.0.1:3306/app_dev?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true'
+export MYSQL_USER=dev
+export MYSQL_PASSWORD=devpass
+```
+
+当前 MySQL 存储覆盖的对象：
+
+- 鸡群批次：`breeding_batches`
+- 称重记录：`weight_records`
+- 养殖标准：`breeding_standards`
+- 料肉比记录：`fcr_records`
+- 料肉比标准：`fcr_standards`
+- AI 分析请求：`analysis_requests`
+- AI 分析结果：`analysis_results`
+- 可视化数据：`visualization_data_records`
+- 异步任务记录：`task_records`
+
+## 4. 本地打包
 
 ```bash
 cd /Users/edy/IdeaProjects/zhitian
@@ -62,7 +123,7 @@ mvn -Dmaven.repo.local=.m2/repository package
 ai-app/target/ai-app-0.1.0-SNAPSHOT.jar
 ```
 
-## 4. 启动应用
+## 5. 启动应用
 
 默认使用静态模型响应，不调用真实 OpenAI：
 
@@ -81,7 +142,7 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
 
 注意：`--server.port`、`--breeding.ai.provider` 这类 Spring Boot 参数必须放在 `-jar xxx.jar` 后面。
 
-## 5. 健康检查
+## 6. 健康检查
 
 ```bash
 curl http://localhost:8080/api/health
@@ -97,7 +158,7 @@ curl http://localhost:8080/api/health
 }
 ```
 
-## 6. 测试 Base 应用分析接口
+## 7. 测试 Base 应用分析接口
 
 ```bash
 curl -X POST http://localhost:8080/api/lark/base-app/analysis-requests \
@@ -132,7 +193,7 @@ curl -X POST http://localhost:8080/api/lark/base-app/analysis-requests \
 - `KNOWLEDGE_QA`
 - `COMPREHENSIVE`
 
-## 7. 测试通用 Agent SSE 流式接口
+## 8. 测试通用 Agent SSE 流式接口
 
 通用 Agent 接口支持普通聊天，也支持在问题命中批次号、体重趋势、均匀度、料肉比等场景时调用后端数据分析工具。
 
@@ -207,7 +268,7 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.openai.model=gpt-5.4
 ```
 
-## 8. 使用 OpenAI 代理服务商测试
+## 9. 使用 OpenAI 代理服务商测试
 
 如果你的模型通过服务商代理访问，需要配置 `base-url`、`api-key` 和 `model`。
 
@@ -256,7 +317,7 @@ breeding:
       max-attempts: 2
 ```
 
-## 9. 配置飞书机器人长连接参数
+## 10. 配置飞书机器人长连接参数
 
 飞书机器人应用和长连接消费参数统一通过配置文件或环境变量管理：
 
@@ -298,7 +359,7 @@ breeding:
 
 其中 `queue-delay` 和 `queue-threads` 用于控制机器人消息延迟串行消费，防止同一会话短时间内并发回复多条消息。
 
-## 10. 常见问题
+## 11. 常见问题
 
 ### Unrecognized option: --breeding.ai.provider=openai
 
@@ -360,7 +421,7 @@ java -jar ai-app/target/ai-app-0.1.0-SNAPSHOT.jar \
   --breeding.ai.openai.timeout=60s
 ```
 
-## 11. 提交前检查
+## 12. 提交前检查
 
 每次提交前建议运行：
 
